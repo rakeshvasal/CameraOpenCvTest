@@ -16,11 +16,15 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.core.CvType;
 import org.opencv.core.DMatch;
+import org.opencv.core.KeyPoint;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.core.MatOfDMatch;
 import org.opencv.core.MatOfKeyPoint;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.features2d.DescriptorMatcher;
@@ -30,6 +34,7 @@ import org.opencv.imgproc.Imgproc;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -47,6 +52,9 @@ public class OpenCvCameraActivity extends AppCompatActivity implements CameraBri
     Mat descriptors2, descriptors1;
     Mat img1;
     MatOfKeyPoint keypoints1, keypoints2;
+    private Mat mGrey, mRgba;
+    private static double areaThreshold = 0.025; //threshold for the area size of an object
+    private static Scalar CONTOUR_COLOR =null;
 
     static {
         if (!OpenCVLoader.initDebug())
@@ -204,17 +212,109 @@ public class OpenCvCameraActivity extends AppCompatActivity implements CameraBri
     public void onCameraViewStarted(int width, int height) {
         w = width;
         h = height;
-
+        mGrey = new Mat(height, width, CvType.CV_8UC4);
+        mRgba = new Mat(height, width, CvType.CV_8UC4);
     }
 
     @Override
     public void onCameraViewStopped() {
-
+        mRgba.release();
     }
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         //return nu
-        return recognize(inputFrame.rgba());
+        detectObject();
+        return inputFrame.rgba();
+    }
+
+    private void detectObject() {
+
+        CONTOUR_COLOR = new Scalar(255);
+
+        final MatOfKeyPoint keypoint = new MatOfKeyPoint();
+        final List<KeyPoint> listpoint;
+        KeyPoint kpoint;
+        Mat mask = Mat.zeros(mGrey.size(), CvType.CV_8UC1);
+        int rectanx1,rectany1,rectanx2,rectany2;
+        int imgsize = mGrey.height() * mGrey.width();
+        Scalar zeos = new Scalar(0, 0, 0);
+
+        List<MatOfPoint> contour2 = new ArrayList<MatOfPoint>();
+        Mat kernel = new Mat(1, 50, CvType.CV_8UC1, Scalar.all(255));
+        Mat morbyte = new Mat();
+        Mat hierarchy = new Mat();
+
+        Rect rectan3;
+
+        FeatureDetector detector = FeatureDetector
+                .create(FeatureDetector.FAST);
+
+        detector.detect(mGrey, keypoint);
+
+        listpoint= keypoint.toList();
+
+
+        for (int ind = 0; ind < listpoint.size(); ind++) {
+            kpoint = listpoint.get(ind);
+            rectanx1 = (int) (kpoint.pt.x - 0.5 * kpoint.size);
+            rectany1 = (int) (kpoint.pt.y - 0.5 * kpoint.size);
+            rectanx2 = (int) (kpoint.size);
+            rectany2 = (int) (kpoint.size);
+            if (rectanx1 <= 0)
+                rectanx1 = 1;
+            if (rectany1 <= 0)
+                rectany1 = 1;
+            if ((rectanx1 + rectanx2) > mGrey.width())
+                rectanx2 = mGrey.width() - rectanx1;
+            if ((rectany1 + rectany2) > mGrey.height())
+                rectany2 = mGrey.height() - rectany1;
+            Rect rectant = new Rect(rectanx1, rectany1, rectanx2, rectany2);
+            try {
+                Mat roi = new Mat(mask, rectant);
+                roi.setTo(CONTOUR_COLOR);
+            } catch (Exception ex) {
+                Log.d("mylog", "mat roi error " + ex.getMessage());
+            }
+        }
+
+
+        Imgproc.morphologyEx(mask, morbyte, Imgproc.MORPH_DILATE, kernel);
+        Imgproc.findContours(morbyte, contour2, hierarchy,
+                Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_NONE);
+        for (int ind = 0; ind < contour2.size(); ind++) {
+            rectan3 = Imgproc.boundingRect(contour2.get(ind));
+
+            if(rectan3.area()<imgsize*areaThreshold){
+                continue;
+            }
+
+            Bitmap bmp=null;
+            try {
+                Mat croppedPart;
+                croppedPart = new Mat(mGrey,rectan3);
+                bmp = Bitmap.createBitmap(croppedPart.width(), croppedPart.height(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(croppedPart, bmp);
+                Log.d(TAG,"Cropping Successful");
+            } catch (Exception e) {
+                Log.d(TAG, "cropped part data error " + e.getMessage());
+            }
+
+
+            if (rectan3.area() > 0.5 * imgsize || rectan3.area() < 100
+                    || rectan3.width / rectan3.height < 2) {
+                Mat roi = new Mat(morbyte, rectan3);
+                roi.setTo(zeos);
+
+            }
+            else
+            {    Imgproc.rectangle(mRgba, rectan3.br(), rectan3.tl(),
+                    CONTOUR_COLOR);
+            }
+
+            if (bmp != null) {
+                Log.d(TAG,"bitmap found!!");
+            }
+        }
     }
 }
