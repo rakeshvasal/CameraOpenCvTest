@@ -95,6 +95,7 @@ public class OpenCvCameraActivity extends AppCompatActivity implements CameraBri
         mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.surface_view);
         mOpenCvCameraView.setCvCameraViewListener(this);
         tvName = (TextView) findViewById(R.id.text1);
+
         Button bt = findViewById(R.id.btn);
         bt.setOnClickListener(new View.OnClickListener() {
             @Override

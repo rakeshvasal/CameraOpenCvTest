@@ -55,8 +55,15 @@ public class CameraTest extends AppCompatActivity {
         captureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mCamera.autoFocus(new Camera.AutoFocusCallback() {
+                    @Override
+                    public void onAutoFocus(boolean success, Camera camera) {
+                        if (success) {
+                            mCamera.takePicture(null, null, mPicture);
+                        }
+                    }
+                });
 
-                mCamera.takePicture(null, null, mPicture);
             }
         });
 
@@ -81,6 +88,7 @@ public class CameraTest extends AppCompatActivity {
             params.setRotation(90);
             params.setPictureSize(size.width, size.height);
             params.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
+            params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
             //setCameraDisplayOrientation(CameraActivity.this,cameraId,mCamera);
             params.setWhiteBalance(Camera.Parameters.WHITE_BALANCE_AUTO);
             params.setExposureCompensation(0);
@@ -320,6 +328,7 @@ public class CameraTest extends AppCompatActivity {
         super.onPause();
         Log.d(TAG, " <- onPause");
     }
+
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
