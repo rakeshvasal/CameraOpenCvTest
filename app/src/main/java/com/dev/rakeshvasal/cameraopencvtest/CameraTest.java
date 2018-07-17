@@ -88,7 +88,7 @@ public class CameraTest extends AppCompatActivity {
             params.setRotation(90);
             params.setPictureSize(size.width, size.height);
             params.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
-            params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+            params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
             //setCameraDisplayOrientation(CameraActivity.this,cameraId,mCamera);
             params.setWhiteBalance(Camera.Parameters.WHITE_BALANCE_AUTO);
             params.setExposureCompensation(0);

@@ -48,7 +48,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class ImagePreviewActivity extends AppCompatActivity {
-    ImageView originalimageView, edgeimageView, contoursview;
+    ImageView originalimageView, edgeimageView, contoursview,fourth;
     Mat rgba;
     FirebaseVisionText[] firebaseVisionText1 = new FirebaseVisionText[1];
     Bitmap bitmap;
@@ -60,6 +60,7 @@ public class ImagePreviewActivity extends AppCompatActivity {
         originalimageView = findViewById(R.id.original);
         edgeimageView = findViewById(R.id.edgeimage);
         contoursview = findViewById(R.id.contours);
+        fourth = findViewById(R.id.fourth);
         String url = getIntent().getStringExtra("ImgURL");
         Bitmap image = BitmapFactory.decodeFile((new File(url)).getAbsolutePath());
 
@@ -177,30 +178,49 @@ public class ImagePreviewActivity extends AppCompatActivity {
         }*/
         // now iterate over all top level contours
         ArrayList<Double> arrayList = new ArrayList<>();
+        ArrayList<AreaRect> areaRectArrayList = new ArrayList<>();
+
         ArrayList<org.opencv.core.Rect> rects = new ArrayList<>();
         for (int idx = 0; idx >= 0; idx = (int) hierarchy.get(0, idx)[0]) {
             MatOfPoint matOfPoint = contours.get(idx);
             org.opencv.core.Rect rect = Imgproc.boundingRect(matOfPoint);
-
             arrayList.add(rect.area());
             rects.add(rect);
+            AreaRect areaRect = new AreaRect(rect.area(), rect);
+            areaRectArrayList.add(areaRect);
             //rect.area();
             Imgproc.rectangle(rgba, rect.tl(), rect.br(), new Scalar(0, 0, 255));
         }
-
-        Double d = Collections.max(arrayList);
+        /////////////////////////////////
         Collections.sort(arrayList);
-        Double secondlast = arrayList.get(arrayList.size() - 2);
-        int area = bitmap.getWidth() * bitmap.getHeight();
-        org.opencv.core.Rect rectbox = rects.get(arrayList.size() - 2);
-        Log.d("AREA ", "" + d);
-        Log.d("AREA 1", "" + area);
-        Log.d("AREA 2", "" + secondlast);
+
+        Collections.sort(areaRectArrayList);
+
+
+
+
+
+
+
+
+
+
+
+        /////////////////////////////////
+        //Double d = Collections.max(arrayList);
+        Collections.sort(arrayList);
+        Double last = arrayList.get(arrayList.size()-1);
+        //int area = bitmap.getWidth() * bitmap.getHeight();
+        //org.opencv.core.Rect rectbox = rects.get(arrayList.size() - 2);
+        org.opencv.core.Rect rectbox = (areaRectArrayList.get(areaRectArrayList.size() - 2)).getRect();
+        //Log.d("AREA ", "" + d);
+        Log.d("AREA 1", "" + last);
+        //Log.d("AREA 2", "" + secondlast);
         Bitmap resultconBitmap = Bitmap.createBitmap(rgba.cols(), rgba.rows(), Bitmap.Config.ARGB_8888);
         Bitmap crop = Bitmap.createBitmap(bitmap, rectbox.x, rectbox.y, rectbox.width, rectbox.height);
         Utils.matToBitmap(rgba, resultconBitmap);
         showBitmap(resultconBitmap, contoursview);
-        showBitmap(crop,originalimageView);
+        showBitmap(crop, fourth);
         return null;
     }
 
