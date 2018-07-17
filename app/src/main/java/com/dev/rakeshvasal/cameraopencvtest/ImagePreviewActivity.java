@@ -177,22 +177,30 @@ public class ImagePreviewActivity extends AppCompatActivity {
         }*/
         // now iterate over all top level contours
         ArrayList<Double> arrayList = new ArrayList<>();
+        ArrayList<org.opencv.core.Rect> rects = new ArrayList<>();
         for (int idx = 0; idx >= 0; idx = (int) hierarchy.get(0, idx)[0]) {
             MatOfPoint matOfPoint = contours.get(idx);
             org.opencv.core.Rect rect = Imgproc.boundingRect(matOfPoint);
 
             arrayList.add(rect.area());
+            rects.add(rect);
             //rect.area();
             Imgproc.rectangle(rgba, rect.tl(), rect.br(), new Scalar(0, 0, 255));
         }
 
         Double d = Collections.max(arrayList);
+        Collections.sort(arrayList);
+        Double secondlast = arrayList.get(arrayList.size() - 2);
         int area = bitmap.getWidth() * bitmap.getHeight();
+        org.opencv.core.Rect rectbox = rects.get(arrayList.size() - 2);
         Log.d("AREA ", "" + d);
         Log.d("AREA 1", "" + area);
+        Log.d("AREA 2", "" + secondlast);
         Bitmap resultconBitmap = Bitmap.createBitmap(rgba.cols(), rgba.rows(), Bitmap.Config.ARGB_8888);
+        Bitmap crop = Bitmap.createBitmap(bitmap, rectbox.x, rectbox.y, rectbox.width, rectbox.height);
         Utils.matToBitmap(rgba, resultconBitmap);
         showBitmap(resultconBitmap, contoursview);
+        showBitmap(crop,originalimageView);
         return null;
     }
 
