@@ -37,5 +37,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-ml-vision:16.0.0'
     implementation 'com.google.firebase:firebase-ml-vision-image-label-model:15.0.0'
     implementation 'org.tensorflow:tensorflow-android:+'
+    implementation 'com.afollestad.material-dialogs:core:0.8.5.9'
+    implementation 'com.github.chrisbanes.photoview:library:1.2.3'
 }
 apply plugin: 'com.google.gms.google-services'

@@ -2,21 +2,25 @@ package com.dev.rakeshvasal.cameraopencvtest;
 
 import android.support.annotation.NonNull;
 
+import org.opencv.core.MatOfPoint;
 import org.opencv.core.Rect;
+import org.opencv.imgproc.Imgproc;
 
 public class AreaRect implements Comparable {
 
     double areaDouble;
     Rect rect;
+    MatOfPoint contour;
 
-    public AreaRect(double area, Rect rect) {
+    public AreaRect(double area, Rect rect, MatOfPoint contour) {
         this.areaDouble = area;
         this.rect = rect;
+        this.contour = contour;
     }
 
     @Override
     public int compareTo(@NonNull Object o) {
-        return (int) rect.area();
+        return (int)Imgproc.contourArea(contour);
     }
 
     public Rect getRect() {
