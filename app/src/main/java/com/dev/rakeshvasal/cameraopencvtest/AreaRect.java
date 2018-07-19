@@ -6,7 +6,7 @@ import org.opencv.core.MatOfPoint;
 import org.opencv.core.Rect;
 import org.opencv.imgproc.Imgproc;
 
-public class AreaRect implements Comparable {
+public class AreaRect {
 
     double areaDouble;
     Rect rect;
@@ -17,12 +17,6 @@ public class AreaRect implements Comparable {
         this.rect = rect;
         this.contour = contour;
     }
-
-    @Override
-    public int compareTo(@NonNull Object o) {
-        return (int)Imgproc.contourArea(contour);
-    }
-
     public Rect getRect() {
         return rect;
     }
