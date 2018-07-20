@@ -42,6 +42,7 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
@@ -192,6 +193,7 @@ public class ImagePreviewActivity extends AppCompatActivity {
         Imgproc.adaptiveThreshold(GrayMat, GrayMat, 255, 1, 1, 75, 10);
         Utils.matToBitmap(GrayMat, thresholdbitmap);
         showBitmap(thresholdbitmap, fifth);
+        //NPE Check
         List<PointF> points = findPoints(thresholdbitmap);
         for (int i = 0; i < points.size(); i++) {
             Log.i("Points0", "" + points.get(0));
@@ -248,8 +250,111 @@ public class ImagePreviewActivity extends AppCompatActivity {
         Utils.matToBitmap(dst, percpectiveBitmap);
         showBitmap(percpectiveBitmap, originalimageView);
         //end percpective
+    }
+
+    private void detectRect(Mat src) {
+
+       // Mat blurred = src.clone();
+
+        Mat dest = new Mat();
+        Imgproc.cvtColor(src,dest,Imgproc.COLOR_BGR2GRAY);
+        Mat blurred = dest.clone();
+        Imgproc.medianBlur(src, blurred, 15);
+        Bitmap blurredbitmap = Bitmap.createBitmap(blurred.cols(), blurred.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(blurred,blurredbitmap);
+        showBitmap(blurredbitmap,contoursview);
+
+        Mat gray0 = new Mat(blurred.size(), CvType.CV_8U), gray = new Mat();
+
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+
+        List<Mat> blurredChannel = new ArrayList<Mat>();
+        blurredChannel.add(blurred);
+        List<Mat> gray0Channel = new ArrayList<Mat>();
+        gray0Channel.add(gray0);
+
+        MatOfPoint2f approxCurve;
+
+        double maxArea = 0;
+        int maxId = -1;
+
+        for (int c = 0; c < 3; c++) {
+            int ch[] = { c, 0 };
+            Core.mixChannels(blurredChannel, gray0Channel, new MatOfInt(ch));
+
+            int thresholdLevel = 1;
+            for (int t = 0; t < thresholdLevel; t++) {
+                if (t == 0) {
+                    Imgproc.Canny(gray0, gray, 30, 40, 3, true); // true ?
+                    Imgproc.dilate(gray, gray, new Mat(), new Point(-1, -1), 1); // 1
+
+                    // ?
+                } else {
+                    Imgproc.adaptiveThreshold(gray0, gray, thresholdLevel,
+                            Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C,
+                            Imgproc.THRESH_BINARY,
+                            (src.width() + src.height()) / 200, t);
 
 
+                }
+
+                Imgproc.findContours(gray, contours, new Mat(),
+                        Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+
+                for (MatOfPoint contour : contours) {
+                    MatOfPoint2f temp = new MatOfPoint2f(contour.toArray());
+
+                    double area = Imgproc.contourArea(contour);
+                    approxCurve = new MatOfPoint2f();
+                    Imgproc.approxPolyDP(temp, approxCurve,
+                            Imgproc.arcLength(temp, true) * 0.02, true);
+
+                    if (approxCurve.total() == 4 && area >= maxArea) {
+                        double maxCosine = 0;
+
+                        List<Point> curves = approxCurve.toList();
+                        for (int j = 2; j < 5; j++) {
+
+                            double cosine = Math.abs(angle(curves.get(j % 4),
+                                    curves.get(j - 2), curves.get(j - 1)));
+                            maxCosine = Math.max(maxCosine, cosine);
+                        }
+
+                        if (maxCosine < 0.3) {
+                            maxArea = area;
+                            maxId = contours.indexOf(contour);
+                        }
+                    }
+                }
+            }
+        }
+        Bitmap dilatebitmap = Bitmap.createBitmap(gray.cols(), gray.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(gray,dilatebitmap);
+        showBitmap(dilatebitmap,fourth);
+        /*Bitmap dilatebitmap = Bitmap.createBitmap(gray.cols(), gray.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(gray,dilatebitmap);
+        showBitmap(dilatebitmap,fourth);*/
+        if (maxId >= 0) {
+            Imgproc.drawContours(src, contours, maxId, new Scalar(255, 0, 0,
+                    .8), 15);
+
+        }
+        Rect rect = Imgproc.boundingRect(contours.get(maxId));
+        Bitmap contoursbitmap = Bitmap.createBitmap(src.cols(), src.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(src, contoursbitmap);
+        showBitmap(contoursbitmap, sixth);
+        Bitmap cropbitmap = Bitmap.createBitmap(contoursbitmap, rect.x, rect.y, rect.width, rect.height);
+        showBitmap(cropbitmap, fifth);
+    }
+
+    private double angle(Point p1, Point p2, Point p0) {
+        double dx1 = p1.x - p0.x;
+        double dy1 = p1.y - p0.y;
+        double dx2 = p2.x - p0.x;
+        double dy2 = p2.y - p0.y;
+        return (dx1 * dx2 + dy1 * dy2)
+                / Math.sqrt((dx1 * dx1 + dy1 * dy1) * (dx2 * dx2 + dy2 * dy2)
+                + 1e-10);
     }
 
     private void detectEdges(Bitmap bitmap) {
@@ -449,6 +554,9 @@ public class ImagePreviewActivity extends AppCompatActivity {
                 case LoaderCallbackInterface.SUCCESS: {
                     Log.i("OpenCV", "OpenCV loaded successfully");
                     processImage(mBitmap);
+                    Mat originalMat = new Mat();
+                    Utils.bitmapToMat(bitmap, originalMat);
+                    //detectRect(originalMat);
 
                     //rgba = new Mat();
                     //compare();
