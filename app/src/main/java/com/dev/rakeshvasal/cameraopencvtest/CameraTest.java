@@ -153,7 +153,6 @@ public class CameraTest extends AppCompatActivity {
         if (!listPermissionsNeeded.isEmpty()) {
             ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray
                     (new String[listPermissionsNeeded.size()]), REQUEST_ID_MULTIPLE_PERMISSIONS);
-
         }
     }
 
@@ -171,7 +170,6 @@ public class CameraTest extends AppCompatActivity {
             return false;
         }
     }
-
 
     /**
      * Helper method to access the camera returns null if it cannot get the
