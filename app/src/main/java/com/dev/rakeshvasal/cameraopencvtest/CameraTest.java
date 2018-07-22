@@ -55,11 +55,15 @@ public class CameraTest extends AppCompatActivity {
         captureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mCamera.autoFocus(new Camera.AutoFocusCallback() {
+               // mCamera.takePicture(null, null, mPicture);
+               mCamera.autoFocus(new Camera.AutoFocusCallback() {
+
                     @Override
                     public void onAutoFocus(boolean success, Camera camera) {
                         if (success) {
                             mCamera.takePicture(null, null, mPicture);
+                        }else {
+
                         }
                     }
                 });
@@ -214,7 +218,7 @@ public class CameraTest extends AppCompatActivity {
                 fos.write(data);
                 fos.close();
 
-                Intent intent = new Intent(CameraTest.this, ImagePreviewActivity.class);
+                Intent intent = new Intent(CameraTest.this, ImageProcessingActivity.class);
 
                 String image_path = pictureFile.getPath();
 
