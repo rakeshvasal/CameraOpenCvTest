@@ -28,27 +28,36 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity android:name=".CameraTest">
-            <!--<intent-filter>
+
+            <!--
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            -->
+        </activity>
+        <activity
+            android:name=".DisplayImage"
+            android:screenOrientation="portrait" />
+      <!--  <activity android:name=".ViewCutoutActivity" />-->
+        <activity
+            android:name=".ViewCutoutActivity"
+            android:screenOrientation="portrait">
+           <!-- <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>-->
         </activity>
-        <activity
-            android:name=".ImagePreviewActivity"
-            android:screenOrientation="portrait" />
-        <activity android:name=".ViewCutoutActivity" />
-        <activity
-            android:name=".OpenCvCameraActivity"
-            android:screenOrientation="landscape">
-
+        <activity android:name=".ImageProcessingActivity" />
+        <activity android:name=".JavaCameraViewActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ImageProcessingActivity"></activity>
     </application>
 
 </manifest>

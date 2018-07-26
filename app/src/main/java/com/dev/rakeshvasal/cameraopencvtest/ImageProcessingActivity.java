@@ -243,7 +243,8 @@ public class ImageProcessingActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(String... strings) {
             try {
-                findRectangle(originalMat);
+                //findRectangle(originalMat);
+                detectRect(originalMat);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -324,9 +325,104 @@ public class ImageProcessingActivity extends AppCompatActivity {
             finalMat = src;
         }
 
+        private void detectRect(Mat src) throws Exception {
+            Mat image_output = new Mat();
+            Mat grayCon = new Mat();
+
+            Imgproc.cvtColor(originalMat, grayCon, Imgproc.COLOR_BGR2GRAY);
+
+
+            Mat blurred = grayCon.clone();
+            Imgproc.medianBlur(originalMat, blurred, 9);
+
+
+            Mat gray0 = new Mat(blurred.size(), CvType.CV_8U), gray = new Mat();
+
+            List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+
+            List<Mat> blurredChannel = new ArrayList<Mat>();
+            blurredChannel.add(blurred);
+            List<Mat> gray0Channel = new ArrayList<Mat>();
+            gray0Channel.add(gray0);
+
+            MatOfPoint2f approxCurve;
+
+            double maxArea = 0;
+            int maxId = -1;
+            for (int c = 0; c < 3; c++) {
+                int ch[] = {c, 0};
+                Core.mixChannels(blurredChannel, gray0Channel, new MatOfInt(ch));
+
+                int thresholdLevel = 1;
+                for (int t = 0; t < thresholdLevel; t++) {
+                    if (t == 0) {
+                        Imgproc.Canny(gray0, gray, 20, 40, 3, true); // true ?
+                        Imgproc.dilate(gray, gray, new Mat(), new Point(-1, -1), 1); // 1
+                        // ?
+                    } else {
+                        Imgproc.adaptiveThreshold(gray0, gray, thresholdLevel,
+                                Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                Imgproc.THRESH_BINARY,
+                                (originalMat.width() + originalMat.height()) / 200, t);
+                    }
+
+                    Imgproc.findContours(gray, contours, new Mat(),
+                            Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+
+                    for (MatOfPoint contour : contours) {
+                        MatOfPoint2f temp = new MatOfPoint2f(contour.toArray());
+
+                        double area = Imgproc.contourArea(contour);
+                        approxCurve = new MatOfPoint2f();
+                        Imgproc.approxPolyDP(temp, approxCurve,
+                                Imgproc.arcLength(temp, true) * 0.02, true);
+
+                        if (approxCurve.total() == 4 && area >= maxArea) {
+                            double maxCosine = 0;
+
+                            List<Point> curves = approxCurve.toList();
+                            for (int j = 2; j < 5; j++) {
+
+                                double cosine = Math.abs(angle(curves.get(j % 4),
+                                        curves.get(j - 2), curves.get(j - 1)));
+                                maxCosine = Math.max(maxCosine, cosine);
+                            }
+
+                            if (maxCosine < 0.3) {
+                                maxArea = area;
+                                maxId = contours.indexOf(contour);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (maxId >= 0) {
+
+                if (maxArea > 30000 && maxArea < 40000) {
+                    //Log.d("Area Of Contour", ":" + maxArea);
+                    Log.d("Area Of Contour", ":" + maxArea);
+               /* Imgproc.drawContours(mRGBA, contours, maxId, new Scalar(255, 0, 0,
+                        .8), 10);*/
+                    Rect rect = Imgproc.boundingRect(contours.get(maxId));
+                    finalMat = originalMat.submat(rect);
+                    //Core.flip(image_output.t(), image_output, 1);
+                    //sendInfo(mat[0],rect);
+                    //return image_output;
+                    Log.d("TAG", "Max Area Found");
+                }
+
+            }
+
+            originalMat.release();
+            gray.release();
+            gray0.release();
+
+        }
+
         @Override
         protected void onPostExecute(String s) {
-            showBitmap(finalMat, second);
+            //showBitmap(finalMat, second);
             super.onPostExecute(s);
         }
     }
