@@ -15,11 +15,12 @@ import java.util.List;
  * Created by Rakeshvasal on 18-Apr-18.
  */
 
-public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
+public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback,Camera.PreviewCallback {
     private SurfaceHolder mHolder;
     public Camera mCamera;
     Context mContext;
     private WindowManager display;
+    Camera.PreviewCallback previewCallback;
 
     private static final String cameraPreview = "CameraView";
     private static final String APP_CLASS = "APP_CLASS";
@@ -33,7 +34,6 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
         this.mCamera = mCamera;
         mCamera.setDisplayOrientation(90);
-
         SurfaceHolder holder = getHolder();
         holder.addCallback(this);
         holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
@@ -82,7 +82,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             params.setExposureCompensation(0);
             params.setPictureFormat(ImageFormat.JPEG);
             params.setJpegQuality(100);
-
+            mCamera.setPreviewCallback(this);
             try {
                 mCamera.setParameters(params);
                 previewCamera(holder);
@@ -142,4 +142,9 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     }
 
 
+
+    @Override
+    public void onPreviewFrame(byte[] data, Camera camera) {
+        //Log.d("Frames", "" + data.length);
+    }
 }
