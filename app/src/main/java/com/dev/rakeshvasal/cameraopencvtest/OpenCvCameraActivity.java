@@ -328,7 +328,6 @@ public class OpenCvCameraActivity extends AppCompatActivity implements CameraBri
                 /*Imgproc.drawContours(src, contours, maxId, new Scalar(255, 0, 0,
                         .8), 8);*/
 
-
             }
             finalMat = src;
         }
