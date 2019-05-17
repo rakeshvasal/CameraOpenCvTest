@@ -1,10 +1,6 @@
 package com.dev.rakeshvasal.cameraopencvtest;
 
-import android.content.Context;
-import android.content.pm.ActivityInfo;
-import android.content.res.AssetManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
@@ -15,22 +11,19 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.dev.rakeshvasal.cameraopencvtest.CardRecognitionCode.CameraLab;
 import com.google.android.gms.vision.CameraSource;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.JavaCamera2View;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
-import org.opencv.core.DMatch;
 import org.opencv.core.KeyPoint;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfByte;
-import org.opencv.core.MatOfDMatch;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.MatOfPoint;
@@ -41,15 +34,9 @@ import org.opencv.core.Scalar;
 import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.features2d.DescriptorMatcher;
 import org.opencv.features2d.FeatureDetector;
-import org.opencv.features2d.Features2d;
 import org.opencv.imgproc.Imgproc;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.Policy;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 public class OpenCvCameraActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2,CameraSource.PictureCallback {
@@ -96,9 +83,9 @@ public class OpenCvCameraActivity extends AppCompatActivity implements CameraBri
                     int listNum = 1;// 0 is the maximum resolution
                     width = resList.get(listNum).width;
                     height = resList.get(listNum).height;
-                    //myCameraView.setMaxFrameSize(width, height);
-                    //myCameraView.enableView();
-                    mOpenCvCameraView.enableView();
+                    myCameraView.setMaxFrameSize(width, height);
+                    myCameraView.enableView();
+                    //mOpenCvCameraView.enableView();
                     //mOpenCvCameraView.setMaxFrameSize(width, height);
 
 
@@ -127,12 +114,12 @@ public class OpenCvCameraActivity extends AppCompatActivity implements CameraBri
         tvName = (TextView) findViewById(R.id.text1);
 
         Button bt = findViewById(R.id.btn);
-        mCamera = openFrontFacingCamera();
+      /*  mCamera = openFrontFacingCamera();
         Camera.Parameters parameters = mCamera.getParameters();
         List<Camera.Size> resList = mCamera.getParameters().getSupportedPictureSizes();
         int listNum = 1;// 0 is the maximum resolution
         width = resList.get(listNum).width;
-        height = resList.get(listNum).height;
+        height = resList.get(listNum).height;*/
 
         //mOpenCvCameraView.setMaxFrameSize(width, height);
         // myCameraView.setMaxFrameSize(width, height);
@@ -185,9 +172,7 @@ public class OpenCvCameraActivity extends AppCompatActivity implements CameraBri
     public void onCameraViewStarted(int width, int height) {
         w = width;
         h = height;
-
         mGrey = new Mat(width, height, CvType.CV_8UC1);
-
         mRgba = new Mat(width, height, CvType.CV_8UC4);
     }
 
@@ -197,18 +182,117 @@ public class OpenCvCameraActivity extends AppCompatActivity implements CameraBri
     }
 
     @Override
-    public Mat onCameraFrame(MyCameraView.CvCameraViewFrame inputFrame) {
+    public Mat onCameraFrame(MyCameraView.CvCameraViewFrame inputFrame)  {
         //return nu
         //detectObject();
         System.gc();
         mRgba = inputFrame.rgba();
-
-        new AsyncProcess(mRgba).execute();
+        try {
+            detectRect(mRgba);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        //new AsyncProcess(mRgba).execute();
         return inputFrame.rgba();
     }
 
     @Override
     public void onPictureTaken(byte[] bytes) {
+
+    }
+
+    private void detectRect(Mat src) throws Exception {
+        Mat image_output = new Mat();
+        Mat grayCon = new Mat();
+
+        Imgproc.cvtColor(mRgba, grayCon, Imgproc.COLOR_BGR2GRAY);
+
+
+        Mat blurred = grayCon.clone();
+        Imgproc.medianBlur(mRgba, blurred, 9);
+
+
+        Mat gray0 = new Mat(blurred.size(), CvType.CV_8U), gray = new Mat();
+
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+
+        List<Mat> blurredChannel = new ArrayList<Mat>();
+        blurredChannel.add(blurred);
+        List<Mat> gray0Channel = new ArrayList<Mat>();
+        gray0Channel.add(gray0);
+
+        MatOfPoint2f approxCurve;
+
+        double maxArea = 0;
+        int maxId = -1;
+        for (int c = 0; c < 3; c++) {
+            int ch[] = {c, 0};
+            Core.mixChannels(blurredChannel, gray0Channel, new MatOfInt(ch));
+
+            int thresholdLevel = 1;
+            for (int t = 0; t < thresholdLevel; t++) {
+                if (t == 0) {
+                    Imgproc.Canny(gray0, gray, 20, 40, 3, true); // true ?
+                    Imgproc.dilate(gray, gray, new Mat(), new Point(-1, -1), 1); // 1
+                    // ?
+                } else {
+                    Imgproc.adaptiveThreshold(gray0, gray, thresholdLevel,
+                            Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C,
+                            Imgproc.THRESH_BINARY,
+                            (mRgba.width() + mRgba.height()) / 200, t);
+                }
+
+                Imgproc.findContours(gray, contours, new Mat(),
+                        Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+
+                for (MatOfPoint contour : contours) {
+                    MatOfPoint2f temp = new MatOfPoint2f(contour.toArray());
+
+                    double area = Imgproc.contourArea(contour);
+                    approxCurve = new MatOfPoint2f();
+                    Imgproc.approxPolyDP(temp, approxCurve,
+                            Imgproc.arcLength(temp, true) * 0.02, true);
+
+                    if (approxCurve.total() == 4 && area >= maxArea) {
+                        double maxCosine = 0;
+
+                        List<Point> curves = approxCurve.toList();
+                        for (int j = 2; j < 5; j++) {
+
+                            double cosine = Math.abs(angle(curves.get(j % 4),
+                                    curves.get(j - 2), curves.get(j - 1)));
+                            maxCosine = Math.max(maxCosine, cosine);
+                        }
+
+                        if (maxCosine < 0.3) {
+                            maxArea = area;
+                            maxId = contours.indexOf(contour);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (maxId >= 0) {
+
+            //if (maxArea > 30000 && maxArea < 40000) {
+            //Log.d("Area Of Contour", ":" + maxArea);
+            Log.d("Area Of Contour", ":" + maxArea);
+            Imgproc.drawContours(mRgba, contours, maxId, new Scalar(255, 0, 0,
+                    .8), 10);
+            //Rect rect = Imgproc.boundingRect(contours.get(maxId));
+            //finalMat = originalMat.submat(rect);
+            //Core.flip(image_output.t(), image_output, 1);
+            //sendInfo(mat[0],rect);
+            //return image_output;
+            Log.d("TAG", "Max Area Found");
+            //}
+
+        }
+
+        mRgba.release();
+        gray.release();
+        gray0.release();
 
     }
 
@@ -549,46 +633,6 @@ public class OpenCvCameraActivity extends AppCompatActivity implements CameraBri
         }
 
         return null;
-    }
-
-    public class CameraLab extends JavaCameraView implements Camera.PictureCallback {
-
-        private String mPictureFileName;
-
-        public CameraLab(Context context, int cameraId) {
-            super(context, cameraId);
-        }
-
-        public void takePicture(final String fileName) {
-            Log.i(TAG, "Taking picture");
-
-            this.mPictureFileName = fileName;
-
-            mCamera.setPreviewCallback(null);
-
-            // PictureCallback is implemented by the current class
-            mCamera.takePicture(null, null, this);
-        }
-
-        @Override
-        public void onPictureTaken(byte[] data, Camera camera) {
-
-            Log.i(TAG, "Saving a bitmap to file");
-            mCamera.startPreview();
-            mCamera.setPreviewCallback(this);
-
-            // Write the image in a file (in jpeg format)
-            try {
-                FileOutputStream fos = new FileOutputStream(mPictureFileName);
-
-                fos.write(data);
-                fos.close();
-
-            } catch (java.io.IOException e) {
-                Log.e("PictureDemo", "Exception in photoCallback", e);
-            }
-
-        }
     }
 
 }

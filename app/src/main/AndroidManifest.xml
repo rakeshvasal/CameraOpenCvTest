@@ -27,33 +27,28 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
         <activity android:name=".CameraTest">
-
-            <!--
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-            -->
         </activity>
+
         <activity
             android:name=".DisplayImage"
             android:screenOrientation="portrait" />
-      <!--  <activity android:name=".ViewCutoutActivity" />-->
+
         <activity
             android:name=".ViewCutoutActivity"
             android:screenOrientation="portrait">
-           <!-- <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>-->
         </activity>
+
         <activity android:name=".ImageProcessingActivity" />
-        <activity android:name=".JavaCameraViewActivity">
+
+        <activity android:name=".OpenCvCameraActivity">
+
+        </activity>
+        <activity android:name=".CardRecognitionCode.JavaCameraViewActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>

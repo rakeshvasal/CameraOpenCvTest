@@ -14,7 +14,7 @@
 
     </RelativeLayout>
 
-    <com.dev.rakeshvasal.cameraopencvtest.CameraLab
+    <com.dev.rakeshvasal.cameraopencvtest.CardRecognitionCode.CameraLab
         android:id="@+id/surface_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

@@ -1,4 +1,4 @@
-package com.dev.rakeshvasal.cameraopencvtest;
+package com.dev.rakeshvasal.cameraopencvtest.CardRecognitionCode;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.SurfaceHolder;
 
 import org.opencv.android.JavaCameraView;
 
@@ -14,13 +15,24 @@ import java.io.FileOutputStream;
 import java.util.List;
 
 @SuppressLint("ViewConstructor")
-public class CameraLab extends JavaCameraView implements Camera.PictureCallback {
+public class CameraLab extends JavaCameraView implements Camera.PictureCallback, SurfaceHolder.Callback {
 
-    private String mPictureFileName;
 
+    private byte[] pictureByteData;
+    private CameraCaptureCallbacks cameraCaptureCallbacks;
+    private Camera.Parameters params;
 
     public CameraLab(Context context, AttributeSet attrs) {
         super(context, attrs);
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder arg0, int arg1, int arg2, int arg3) {
+        super.surfaceChanged(arg0, arg1, arg2, arg3);
+        if (mCamera != null) {
+            toggleFlash(false);
+            mCamera.startPreview();
+        }
     }
 
     public CameraLab(Context context, int cameraId) {
@@ -45,8 +57,15 @@ public class CameraLab extends JavaCameraView implements Camera.PictureCallback 
         mCamera.setParameters(params);
     }
 
-    public List<Camera.Size> getResolutionList() {
-        return mCamera.getParameters().getSupportedPreviewSizes();
+    public List<Camera.Size> getPictureSizeList() {
+        return mCamera.getParameters().getSupportedPictureSizes();
+    }
+
+    public void setMaxResolution() {
+        List<Camera.Size> sizes = getPictureSizeList();
+        Camera.Size size = sizes.get(0);
+        params.setPictureSize(size.width, size.height);
+        mCamera.setParameters(params);
     }
 
     public Camera openFrontFacingCamera() {
@@ -80,34 +99,45 @@ public class CameraLab extends JavaCameraView implements Camera.PictureCallback 
         return mCamera.getParameters().getPreviewSize();
     }
 
-    public void takePicture(final String fileName) {
-        Log.i("a", "Taking picture");
+    public void toggleFlash(boolean flashstate) {
+        if (mCamera != null) {
+            params = mCamera.getParameters();
+            setMaxResolution();
+            if (flashstate) {
+                params.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
+            } else {
+                params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+            }
+            params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+            mCamera.setParameters(params);
+        }
+    }
 
-        this.mPictureFileName = fileName;
-
+    public void takePicture() {
+        Log.i("CameraLab", "Taking pictureStart");
         mCamera.setPreviewCallback(null);
-
         // PictureCallback is implemented by the current class
         mCamera.takePicture(null, null, this);
+        Log.i("CameraLab", "Taking pictureEnd");
     }
 
     @Override
     public void onPictureTaken(byte[] data, Camera camera) {
-
-        Log.i("a", "Saving a bitmap to file");
+        Log.i("CameraLab", "onPictureTakenStart");
         mCamera.startPreview();
         mCamera.setPreviewCallback(this);
+        pictureByteData = data;
         Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-        // Write the image in a file (in jpeg format)
-        try {
-            FileOutputStream fos = new FileOutputStream(mPictureFileName);
-
-            fos.write(data);
-            fos.close();
-
-        } catch (java.io.IOException e) {
-            Log.e("PictureDemo", "Exception in photoCallback", e);
-        }
-
+        cameraCaptureCallbacks.onCapture(pictureByteData);
+        Log.i("CameraLab", "onPictureTakenEnd");
     }
+
+    public interface CameraCaptureCallbacks {
+        public void onCapture(byte[] pictureByteData);
+    }
+
+    public void setCaptureCallback(CameraCaptureCallbacks captureCallback) {
+        this.cameraCaptureCallbacks = captureCallback;
+    }
+
 }

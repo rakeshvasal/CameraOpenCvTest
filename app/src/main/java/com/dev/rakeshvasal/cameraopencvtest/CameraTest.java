@@ -216,7 +216,7 @@ public class CameraTest extends AppCompatActivity {
         //setValues();
     }
 
-    Camera.PreviewCallback previewCallback = new Camera.PreviewCallback() {
+    /*Camera.PreviewCallback previewCallback = new Camera.PreviewCallback() {
         @Override
         public void onPreviewFrame(byte[] data, Camera camera) {
             Log.d("Frames", "" + data.length);
@@ -225,9 +225,9 @@ public class CameraTest extends AppCompatActivity {
             Bitmap bitmap = BitmapFactory.decodeStream(arrayInputStream);
             Mat mat = new Mat();
             Utils.bitmapToMat(bitmap, mat);
-            new AsyncProcess(mat).execute();
+            //new AsyncProcess(mat).execute();
         }
-    };
+    };*/
 
     Camera.PictureCallback mPicture = new Camera.PictureCallback() {
         @Override

@@ -1,18 +1,14 @@
 package com.dev.rakeshvasal.cameraopencvtest;
 
-import android.content.Context;
 import android.content.Intent;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
+
+import com.dev.rakeshvasal.cameraopencvtest.CardRecognitionCode.JavaCameraViewActivity;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -30,7 +26,7 @@ public class ViewCutoutActivity extends AppCompatActivity {
         mainLayer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(ViewCutoutActivity.this,JavaCameraViewActivity.class);
+                Intent intent = new Intent(ViewCutoutActivity.this, JavaCameraViewActivity.class);
                 startActivity(intent);
             }
         });
