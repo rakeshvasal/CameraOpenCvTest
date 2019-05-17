@@ -1,8 +1,10 @@
 package com.dev.rakeshvasal.cameraopencvtest.CardRecognitionCode;
 
 import android.annotation.TargetApi;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+
 import android.media.ExifInterface;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -14,11 +16,11 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.dev.rakeshvasal.cameraopencvtest.CardOutputModel;
 import com.dev.rakeshvasal.cameraopencvtest.R;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
-import com.google.android.gms.vision.CameraSource;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.label.FirebaseVisionLabel;
@@ -43,6 +45,7 @@ import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -51,14 +54,13 @@ import java.util.List;
 
 import static com.bumptech.glide.load.resource.bitmap.TransformationUtils.rotateImage;
 
-public class JavaCameraViewActivity extends AppCompatActivity implements CameraSource.PictureCallback, CameraLab.CameraCaptureCallbacks, CameraBridgeViewBase.CvCameraViewListener2 {
+public class JavaCameraViewActivity extends AppCompatActivity implements CameraLab.CameraCaptureCallbacks, CameraBridgeViewBase.CvCameraViewListener2 {
 
 
     CameraLab CameraView;
-    private float originalImageAspectRatio;
     private static int MAX_HEIGHT = 1600;
     private byte[] originalByteData;
-    private static String TAG = "THis";
+    private static String TAG = "JavaCameraViewActivity.class";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,10 +73,6 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraS
         bt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-                String currentDateandTime = sdf.format(new Date());
-                String fileName = "Image_" + currentDateandTime + ".jpg";
-
                 CameraView.takePicture();
             }
         });
@@ -136,13 +134,6 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraS
         super.onDestroy();
         if (CameraView != null)
             CameraView.disableView();
-    }
-
-    @Override
-    public void onPictureTaken(byte[] bytes) {
-        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-        Log.d("bitmap", "" + bitmap.getWidth());
-
     }
 
     @Override
@@ -217,6 +208,7 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraS
                 originalByteData = pictureByteData;
                 int width = bitmap.getWidth();
                 int height = bitmap.getHeight();
+                float originalImageAspectRatio;
                 if (width > height) {
                     originalImageAspectRatio = (float) width / height;
                 } else if (height > width) {
@@ -311,16 +303,15 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraS
 
             // draw enclosing rectangle (all same color, but you could use variable i to make them unique)
             Imgproc.rectangle(binImage, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(255, 255, 255), 5);
-
         }
     }
 
     class CropCard extends AsyncTask<Mat, Mat, Mat> {
-        Mat mRGBA = new Mat();
+        Mat originalMat = new Mat();
 
         @Override
         protected Mat doInBackground(Mat... mat) {
-            mRGBA = mat[0];
+            originalMat = mat[0];
             Mat image_output = new Mat();
             Mat grayCon = new Mat();
             int count = 0;
@@ -361,7 +352,7 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraS
                             Imgproc.adaptiveThreshold(gray0, gray, thresholdLevel,
                                     Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C,
                                     Imgproc.THRESH_BINARY,
-                                    (mRGBA.width() + mRGBA.height()) / 200, t);
+                                    (originalMat.width() + originalMat.height()) / 200, t);
                         }
 
                         Imgproc.findContours(gray, contours, new Mat(),
@@ -395,25 +386,24 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraS
                     }
                 }
                 if (maxId >= 0) {
-                    Double area = Imgproc.contourArea(contours.get(maxId));
+                    double area = Imgproc.contourArea(contours.get(maxId));
 
                     final int finalMaxId = maxId;
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Imgproc.drawContours(mRGBA, contours, finalMaxId, new Scalar(255, 0, 0), 5);
+                            Imgproc.drawContours(originalMat, contours, finalMaxId, new Scalar(255, 0, 0), 5);
                         }
                     });
                     Log.d("Area Of Contour", ":" + area);
                     if (maxId >= 0) {
                         //if (maxArea > 150000 && maxArea < 300000) {
                         if (maxArea > 100000 && maxArea < 500000) {
-                            //Log.d("Area Of Contour", ":" + maxArea);
+
                             Log.d("Area Of Contour", ":" + maxArea);
                             org.opencv.core.Rect rect = Imgproc.boundingRect(contours.get(maxId));
                             if (count == 0) {
                                 image_output = mat[0].submat(rect);
-                                count = 1;
                                 return image_output;
                             }
                             Log.d(TAG, "Max Area Found");
@@ -442,15 +432,17 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraS
                         resultBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
                     }
                 });
+                Bitmap originalBitmap = Bitmap.createBitmap(originalMat.cols(), originalMat.rows(), Bitmap.Config.ARGB_8888);
+                File originalFile = CommanUtils.getFileFromBitmap(originalBitmap);
+                File cardFile = CommanUtils.getFileFromBitmap(resultBitmap);
 
-                byte[] data = stream.toByteArray();
-                //resultBitmap.recycle();
-
-                //cardimage.startAnimation(fadeIn);
-
+                //CardOutputModel cardOutputModel = new CardOutputModel(originalBitmap, cardBitmap);
+                Intent intent = new Intent(JavaCameraViewActivity.this, CardOutputActivity.class);
+                intent.putExtra("originalBitmap", originalFile.getAbsolutePath());
+                intent.putExtra("resultBitmap", cardFile.getAbsolutePath());
+                startActivity(intent);
             } else {
                 Toast.makeText(JavaCameraViewActivity.this, "No Card Captured", Toast.LENGTH_SHORT).show();
-
                 if (originalByteData != null) {
                     Bitmap originalBitmap = handleRotation(originalByteData);
                     originalBitmap = Bitmap.createScaledBitmap(originalBitmap, (originalBitmap.getWidth() - 100), (originalBitmap.getHeight() - 100), false);
