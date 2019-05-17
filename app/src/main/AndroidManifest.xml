@@ -29,6 +29,7 @@
         android:theme="@style/AppTheme">
 
         <activity android:name=".CameraTest">
+
         </activity>
 
         <activity
@@ -53,6 +54,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".ImageProcessingActivity"></activity>
     </application>
 
 </manifest>
