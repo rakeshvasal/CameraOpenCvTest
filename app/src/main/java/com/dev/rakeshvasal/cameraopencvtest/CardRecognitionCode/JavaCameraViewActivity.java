@@ -61,6 +61,7 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
     private static int MAX_HEIGHT = 1600;
     private byte[] originalByteData;
     private static String TAG = "JavaCameraViewActivity.class";
+    Bitmap originalBitmap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,7 +123,6 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
         Log.d("a", " <- OnResume");
     }
 
-
     @Override
     public void onPause() {
         super.onPause();
@@ -164,47 +164,13 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
         });
     }
 
-    private void recognizeBitmap(Mat mRgba) {
-        Log.i("Function", "recognizeBitmap");
-        Bitmap bitmap = Bitmap.createBitmap(mRgba.cols(), mRgba.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(mRgba, bitmap);
-        FirebaseVisionLabelDetector detector = FirebaseVision.getInstance()
-                .getVisionLabelDetector();
-
-        FirebaseVisionImage firebaseVisionImage = FirebaseVisionImage.fromBitmap(bitmap);
-        Task<List<FirebaseVisionLabel>> result =
-                detector.detectInImage(firebaseVisionImage)
-                        .addOnSuccessListener(
-                                new OnSuccessListener<List<FirebaseVisionLabel>>() {
-                                    @Override
-                                    public void onSuccess(List<FirebaseVisionLabel> labels) {
-                                        for (FirebaseVisionLabel label : labels) {
-                                            String text = label.getLabel();
-                                            float confidence = label.getConfidence();
-                                            Log.d("text1", text);
-                                            Log.d("confidence", "" + confidence);
-                                            if (text.equalsIgnoreCase("paper")) {
-                                                Log.d("Lablel", text);
-                                                Toast.makeText(JavaCameraViewActivity.this, "YO", Toast.LENGTH_SHORT).show();
-                                            }
-                                        }
-                                    }
-                                })
-                        .addOnFailureListener(
-                                new OnFailureListener() {
-                                    @Override
-                                    public void onFailure(@NonNull Exception e) {
-                                        e.printStackTrace();
-                                    }
-                                });
-    }
-
     @Override
     public void onCapture(byte[] pictureByteData) {
         Mat mat = new Mat();
         if (pictureByteData != null) {
-            Bitmap bitmap = handleRotation(pictureByteData);
+            Bitmap bitmap = CommanUtils.handleRotation(pictureByteData);
             if (bitmap != null) {
+                originalBitmap = bitmap;
                 originalByteData = pictureByteData;
                 int width = bitmap.getWidth();
                 int height = bitmap.getHeight();
@@ -234,77 +200,7 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.N)
-    private Bitmap handleRotation(byte[] data) {
-        Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-        ExifInterface exifInterface = null;
-        try {
-            exifInterface = new ExifInterface(new ByteArrayInputStream(data));
-            int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
-            int rotationDegrees = 0;
-            switch (orientation) {
-                case ExifInterface.ORIENTATION_UNDEFINED:
-                    rotationDegrees = 90;
-                    bitmap = rotateImage(bitmap, rotationDegrees);
-                    break;
-                case ExifInterface.ORIENTATION_ROTATE_90:
-                    rotationDegrees = 90;
-                    bitmap = rotateImage(bitmap, rotationDegrees);
-                    break;
-                case ExifInterface.ORIENTATION_ROTATE_180:
-                    rotationDegrees = 180;
-                    bitmap = rotateImage(bitmap, rotationDegrees);
-                    break;
-                case ExifInterface.ORIENTATION_ROTATE_270:
-                    rotationDegrees = 270;
-                    bitmap = rotateImage(bitmap, rotationDegrees);
-                    break;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return bitmap;
-    }
 
-    private void CharacterRecognition(Mat sImage) {
-        Mat grayImage = new Mat();
-        Mat blurImage = new Mat();
-        Mat thresImage = new Mat();
-        Mat binImage = new Mat();
-        Imgproc.cvtColor(sImage, grayImage, Imgproc.COLOR_BGR2GRAY); //градации серого
-        Imgproc.GaussianBlur(grayImage, blurImage, new Size(5, 5), 0); //размытие
-        Imgproc.adaptiveThreshold(blurImage, thresImage, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 101, 39);
-        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-        Mat hierarchy = new Mat();
-
-        Imgproc.Canny(thresImage, binImage, 30, 10, 3, true); //контур
-        Imgproc.findContours(binImage, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE, new Point(0, 0));
-
-        hierarchy.release();
-        Imgproc.drawContours(binImage, contours, -1, new Scalar(255, 255, 255));//, 2, 8, hierarchy, 0, new Point());
-
-
-        MatOfPoint2f approxCurve = new MatOfPoint2f();
-
-        //For each contour found
-        for (int i = 0; i < contours.size(); i++) {
-            //Convert contours(i) from MatOfPoint to MatOfPoint2f
-            MatOfPoint2f contour2f = new MatOfPoint2f(contours.get(i).toArray());
-            //Processing on mMOP2f1 which is in type MatOfPoint2f
-            double approxDistance = Imgproc.arcLength(contour2f, true) * 0.02;
-            Imgproc.approxPolyDP(contour2f, approxCurve, approxDistance, true);
-
-            //Convert back to MatOfPoint
-            MatOfPoint points = new MatOfPoint(approxCurve.toArray());
-
-
-            // Get bounding rect of contour
-            Rect rect = Imgproc.boundingRect(points);
-
-            // draw enclosing rectangle (all same color, but you could use variable i to make them unique)
-            Imgproc.rectangle(binImage, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(255, 255, 255), 5);
-        }
-    }
 
     class CropCard extends AsyncTask<Mat, Mat, Mat> {
         Mat originalMat = new Mat();
@@ -315,12 +211,12 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
             Mat image_output = new Mat();
             Mat grayCon = new Mat();
             int count = 0;
-            Imgproc.cvtColor(mat[0], grayCon, Imgproc.COLOR_BGR2GRAY);
 
+            Imgproc.cvtColor(mat[0], grayCon, Imgproc.COLOR_BGR2GRAY);
 
             Mat blurred = grayCon.clone();
             Imgproc.medianBlur(mat[0], blurred, 9);
-
+            //originalBitmap = Bitmap.createBitmap(originalMat.cols(), originalMat.rows(), Bitmap.Config.ARGB_8888);
 
             Mat gray0 = new Mat(blurred.size(), CvType.CV_8U), gray = new Mat();
 
@@ -424,7 +320,6 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
                 Log.d(TAG, "In Post with values");
                 final Bitmap resultBitmap = Bitmap.createBitmap(image_output.cols(), image_output.rows(), Bitmap.Config.ARGB_8888);
                 Utils.matToBitmap(image_output, resultBitmap);
-                Bitmap cardBitmap = resultBitmap.copy(Bitmap.Config.ARGB_8888, true);
                 final ByteArrayOutputStream stream = new ByteArrayOutputStream();
                 runOnUiThread(new Runnable() {
                     @Override
@@ -432,11 +327,11 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
                         resultBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
                     }
                 });
-                Bitmap originalBitmap = Bitmap.createBitmap(originalMat.cols(), originalMat.rows(), Bitmap.Config.ARGB_8888);
+
                 File originalFile = CommanUtils.getFileFromBitmap(originalBitmap);
                 File cardFile = CommanUtils.getFileFromBitmap(resultBitmap);
 
-                //CardOutputModel cardOutputModel = new CardOutputModel(originalBitmap, cardBitmap);
+
                 Intent intent = new Intent(JavaCameraViewActivity.this, CardOutputActivity.class);
                 intent.putExtra("originalBitmap", originalFile.getAbsolutePath());
                 intent.putExtra("resultBitmap", cardFile.getAbsolutePath());
@@ -444,7 +339,7 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
             } else {
                 Toast.makeText(JavaCameraViewActivity.this, "No Card Captured", Toast.LENGTH_SHORT).show();
                 if (originalByteData != null) {
-                    Bitmap originalBitmap = handleRotation(originalByteData);
+                    Bitmap originalBitmap = CommanUtils.handleRotation(originalByteData);
                     originalBitmap = Bitmap.createScaledBitmap(originalBitmap, (originalBitmap.getWidth() - 100), (originalBitmap.getHeight() - 100), false);
                     originalByteData = null;
                 }
@@ -460,6 +355,81 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
                     / Math.sqrt((dx1 * dx1 + dy1 * dy1) * (dx2 * dx2 + dy2 * dy2)
                     + 1e-10);
         }
+    }
+
+    private void CharacterRecognition(Mat sImage) {
+        Mat grayImage = new Mat();
+        Mat blurImage = new Mat();
+        Mat thresImage = new Mat();
+        Mat binImage = new Mat();
+        Imgproc.cvtColor(sImage, grayImage, Imgproc.COLOR_BGR2GRAY); //градации серого
+        Imgproc.GaussianBlur(grayImage, blurImage, new Size(5, 5), 0); //размытие
+        Imgproc.adaptiveThreshold(blurImage, thresImage, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 101, 39);
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        Mat hierarchy = new Mat();
+
+        Imgproc.Canny(thresImage, binImage, 30, 10, 3, true); //контур
+        Imgproc.findContours(binImage, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE, new Point(0, 0));
+
+        hierarchy.release();
+        Imgproc.drawContours(binImage, contours, -1, new Scalar(255, 255, 255));//, 2, 8, hierarchy, 0, new Point());
+
+
+        MatOfPoint2f approxCurve = new MatOfPoint2f();
+
+        //For each contour found
+        for (int i = 0; i < contours.size(); i++) {
+            //Convert contours(i) from MatOfPoint to MatOfPoint2f
+            MatOfPoint2f contour2f = new MatOfPoint2f(contours.get(i).toArray());
+            //Processing on mMOP2f1 which is in type MatOfPoint2f
+            double approxDistance = Imgproc.arcLength(contour2f, true) * 0.02;
+            Imgproc.approxPolyDP(contour2f, approxCurve, approxDistance, true);
+
+            //Convert back to MatOfPoint
+            MatOfPoint points = new MatOfPoint(approxCurve.toArray());
+
+
+            // Get bounding rect of contour
+            Rect rect = Imgproc.boundingRect(points);
+
+            // draw enclosing rectangle (all same color, but you could use variable i to make them unique)
+            Imgproc.rectangle(binImage, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(255, 255, 255), 5);
+        }
+    }
+
+    private void recognizeBitmap(Mat mRgba) {
+        Log.i("Function", "recognizeBitmap");
+        Bitmap bitmap = Bitmap.createBitmap(mRgba.cols(), mRgba.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(mRgba, bitmap);
+        FirebaseVisionLabelDetector detector = FirebaseVision.getInstance()
+                .getVisionLabelDetector();
+
+        FirebaseVisionImage firebaseVisionImage = FirebaseVisionImage.fromBitmap(bitmap);
+        Task<List<FirebaseVisionLabel>> result =
+                detector.detectInImage(firebaseVisionImage)
+                        .addOnSuccessListener(
+                                new OnSuccessListener<List<FirebaseVisionLabel>>() {
+                                    @Override
+                                    public void onSuccess(List<FirebaseVisionLabel> labels) {
+                                        for (FirebaseVisionLabel label : labels) {
+                                            String text = label.getLabel();
+                                            float confidence = label.getConfidence();
+                                            Log.d("text1", text);
+                                            Log.d("confidence", "" + confidence);
+                                            if (text.equalsIgnoreCase("paper")) {
+                                                Log.d("Lablel", text);
+                                                Toast.makeText(JavaCameraViewActivity.this, "YO", Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
+                                    }
+                                })
+                        .addOnFailureListener(
+                                new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                });
     }
 }
 
