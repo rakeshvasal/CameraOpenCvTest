@@ -2,7 +2,6 @@ package com.dev.rakeshvasal.cameraopencvtest;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.PointF;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -19,14 +18,11 @@ import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
-import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.opencv.core.Core.BORDER_DEFAULT;
 
 public class ImageProcessingActivity extends AppCompatActivity {
 

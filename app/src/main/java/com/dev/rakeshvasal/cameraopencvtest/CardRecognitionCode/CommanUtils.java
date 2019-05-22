@@ -8,24 +8,13 @@ import android.graphics.PointF;
 import android.media.ExifInterface;
 import android.os.Build;
 import android.os.Environment;
-import android.support.annotation.NonNull;
 import android.util.Log;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import com.dev.rakeshvasal.cameraopencvtest.AreaRect;
 import com.dev.rakeshvasal.cameraopencvtest.FocusView;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.ml.vision.FirebaseVision;
-import com.google.firebase.ml.vision.common.FirebaseVisionImage;
-import com.google.firebase.ml.vision.label.FirebaseVisionLabel;
-import com.google.firebase.ml.vision.label.FirebaseVisionLabelDetector;
-import com.google.firebase.ml.vision.text.FirebaseVisionText;
-import com.google.firebase.ml.vision.text.FirebaseVisionTextDetector;
 
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
@@ -537,7 +526,7 @@ class CommanUtils {
         return Imgproc.contourArea(contour);
     }
 
-    private void detectUsingMlKit(final Bitmap bitmap) {
+    /*private void detectUsingMlKit(final Bitmap bitmap) {
         FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmap);
 
         FirebaseVisionLabelDetector detector = FirebaseVision.getInstance()
@@ -545,8 +534,8 @@ class CommanUtils {
 
 
 // Or, to set the minimum confidence required:
-       /* FirebaseVisionLabelDetector detector = FirebaseVision.getInstance()
-                .getVisionLabelDetector(options);*/
+       *//* FirebaseVisionLabelDetector detector = FirebaseVision.getInstance()
+                .getVisionLabelDetector(options);*//*
 
 
         Task<List<FirebaseVisionLabel>> result =
@@ -611,7 +600,7 @@ class CommanUtils {
                                         // ...
                                     }
                                 });
-    }
+    }*/
 
     public void findLines(Mat img) {
 

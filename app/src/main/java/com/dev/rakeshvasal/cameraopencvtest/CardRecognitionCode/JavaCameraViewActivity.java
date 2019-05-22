@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -13,13 +12,6 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.dev.rakeshvasal.cameraopencvtest.R;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.ml.vision.FirebaseVision;
-import com.google.firebase.ml.vision.common.FirebaseVisionImage;
-import com.google.firebase.ml.vision.label.FirebaseVisionLabel;
-import com.google.firebase.ml.vision.label.FirebaseVisionLabelDetector;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -260,8 +252,7 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
                 File cardFile = CommanUtils.getFileFromBitmap(resultBitmap);
 
 
-                //Intent intent = new Intent(JavaCameraViewActivity.this, CardOutputActivity.class);
-                Intent intent = new Intent(JavaCameraViewActivity.this, ImagePreviewActivity.class);
+                Intent intent = new Intent(JavaCameraViewActivity.this, CardOutputActivity.class);
                 intent.putExtra("ImgURL", originalFile.getAbsolutePath());
                 //intent.putExtra("resultBitmap", cardFile.getAbsolutePath());
                 startActivity(intent);
@@ -376,7 +367,7 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
         }
     }
 
-    private void recognizeBitmap(Mat mRgba) {
+    /*private void recognizeBitmap(Mat mRgba) {
         Log.i("Function", "recognizeBitmap");
         Bitmap bitmap = Bitmap.createBitmap(mRgba.cols(), mRgba.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(mRgba, bitmap);
@@ -409,6 +400,6 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
                                         e.printStackTrace();
                                     }
                                 });
-    }
+    }*/
 }
 
