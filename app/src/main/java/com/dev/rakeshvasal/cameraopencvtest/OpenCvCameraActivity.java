@@ -1,5 +1,6 @@
 package com.dev.rakeshvasal.cameraopencvtest;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.hardware.Camera;
 import android.os.AsyncTask;
@@ -36,6 +37,7 @@ import org.opencv.features2d.DescriptorMatcher;
 import org.opencv.features2d.FeatureDetector;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -488,28 +490,10 @@ public class OpenCvCameraActivity extends AppCompatActivity implements CameraBri
         @Override
         protected void onPostExecute(String s) {
 
-            //showBitmap(finalMat, second);
             super.onPostExecute(s);
         }
     }
 
-   /* public void onPictureTaken(byte[] data, Camera camera) {
-
-        //Log.i(TAG, "Saving a bitmap to file");
-        // The camera preview was automatically stopped. Start it again.
-        mCamera.startPreview();
-        mCamera.setPreviewCallback(this);
-// Write the image in a file (in jpeg format)
-        try {
-            FileOutputStream fos = new FileOutputStream(mPictureFileName);
-
-            fos.write(data);
-            fos.close();
-
-        } catch (java.io.IOException e) {
-            Log.e("PictureDemo", "Exception in photoCallback", e);
-        }
-    }*/
     private double angle(Point p1, Point p2, Point p0) {
         double dx1 = p1.x - p0.x;
         double dy1 = p1.y - p0.y;

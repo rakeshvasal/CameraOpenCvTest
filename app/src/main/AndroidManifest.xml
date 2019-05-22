@@ -27,25 +27,27 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".CardRecognitionCode.CardOutputActivity"></activity>
-        <activity android:name=".CameraTest"></activity>
-        <activity
-            android:name=".DisplayImage"
-            android:screenOrientation="portrait" />
+        <activity android:name=".LauncherActivity">
+
+        </activity>
+        <activity android:name=".CardRecognitionCode.CardOutputActivity">
+        </activity>
+        <activity android:name=".CameraTest">
+        </activity>
         <activity
             android:name=".ViewCutoutActivity"
-            android:screenOrientation="portrait"></activity>
+            android:screenOrientation="portrait">
+        </activity>
         <activity android:name=".ImageProcessingActivity" />
-        <activity android:name=".OpenCvCameraActivity"></activity>
-        <activity android:name=".CardRecognitionCode.JavaCameraViewActivity">
+        <activity android:name=".OpenCvCameraActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <action android:name="android.intent.action.VIEW" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ImageProcessingActivity" />
+        <activity android:name=".CardRecognitionCode.JavaCameraViewActivity">
+        </activity>
     </application>
 
 </manifest>

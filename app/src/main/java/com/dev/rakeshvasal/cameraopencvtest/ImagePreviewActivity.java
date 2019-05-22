@@ -53,7 +53,6 @@ public class ImagePreviewActivity extends AppCompatActivity {
     Mat rgba;
     FirebaseVisionText[] firebaseVisionText1 = new FirebaseVisionText[1];
     Bitmap bitmap;
-    QuadrilateralView mSelectionImageView;
     private static final int MAX_HEIGHT = 500;
     Bitmap mBitmap, mResult;
     MaterialDialog mResultDialog;
@@ -68,7 +67,6 @@ public class ImagePreviewActivity extends AppCompatActivity {
         fourth = findViewById(R.id.fourth);
         fifth = findViewById(R.id.fifth);
         sixth = findViewById(R.id.sixth);
-        //mSelectionImageView = (QuadrilateralView) findViewById(R.id.polygonView);
         String url = getIntent().getStringExtra("ImgURL");
         mBitmap = BitmapFactory.decodeFile((new File(url)).getAbsolutePath());
         //mSelectionImageView.setImageBitmap(getResizedBitmap(mBitmap, MAX_HEIGHT));
@@ -231,101 +229,6 @@ public class ImagePreviewActivity extends AppCompatActivity {
         Utils.matToBitmap(dst, percpectiveBitmap);
         showBitmap(percpectiveBitmap, originalimageView);
         //end percpective
-    }
-
-    private void detectRect(Mat src) {
-
-       // Mat blurred = src.clone();
-
-        Mat dest = new Mat();
-        Imgproc.cvtColor(src,dest,Imgproc.COLOR_BGR2GRAY);
-        Mat blurred = dest.clone();
-        Imgproc.medianBlur(src, blurred, 15);
-        Bitmap blurredbitmap = Bitmap.createBitmap(blurred.cols(), blurred.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(blurred,blurredbitmap);
-        showBitmap(blurredbitmap,contoursview);
-
-        Mat gray0 = new Mat(blurred.size(), CvType.CV_8U), gray = new Mat();
-
-        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-
-        List<Mat> blurredChannel = new ArrayList<Mat>();
-        blurredChannel.add(blurred);
-        List<Mat> gray0Channel = new ArrayList<Mat>();
-        gray0Channel.add(gray0);
-
-        MatOfPoint2f approxCurve;
-
-        double maxArea = 0;
-        int maxId = -1;
-
-        for (int c = 0; c < 3; c++) {
-            int ch[] = { c, 0 };
-            Core.mixChannels(blurredChannel, gray0Channel, new MatOfInt(ch));
-
-            int thresholdLevel = 1;
-            for (int t = 0; t < thresholdLevel; t++) {
-                if (t == 0) {
-                    Imgproc.Canny(gray0, gray, 30, 40, 3, true); // true ?
-                    Imgproc.dilate(gray, gray, new Mat(), new Point(-1, -1), 1); // 1
-
-                    // ?
-                } else {
-                    Imgproc.adaptiveThreshold(gray0, gray, thresholdLevel,
-                            Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C,
-                            Imgproc.THRESH_BINARY,
-                            (src.width() + src.height()) / 200, t);
-
-
-                }
-
-                Imgproc.findContours(gray, contours, new Mat(),
-                        Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-
-                for (MatOfPoint contour : contours) {
-                    MatOfPoint2f temp = new MatOfPoint2f(contour.toArray());
-
-                    double area = Imgproc.contourArea(contour);
-                    approxCurve = new MatOfPoint2f();
-                    Imgproc.approxPolyDP(temp, approxCurve,
-                            Imgproc.arcLength(temp, true) * 0.02, true);
-
-                    if (approxCurve.total() == 4 && area >= maxArea) {
-                        double maxCosine = 0;
-
-                        List<Point> curves = approxCurve.toList();
-                        for (int j = 2; j < 5; j++) {
-
-                            double cosine = Math.abs(angle(curves.get(j % 4),
-                                    curves.get(j - 2), curves.get(j - 1)));
-                            maxCosine = Math.max(maxCosine, cosine);
-                        }
-
-                        if (maxCosine < 0.3) {
-                            maxArea = area;
-                            maxId = contours.indexOf(contour);
-                        }
-                    }
-                }
-            }
-        }
-        Bitmap dilatebitmap = Bitmap.createBitmap(gray.cols(), gray.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(gray,dilatebitmap);
-        showBitmap(dilatebitmap,fourth);
-        /*Bitmap dilatebitmap = Bitmap.createBitmap(gray.cols(), gray.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(gray,dilatebitmap);
-        showBitmap(dilatebitmap,fourth);*/
-        if (maxId >= 0) {
-            Imgproc.drawContours(src, contours, maxId, new Scalar(255, 0, 0,
-                    .8), 15);
-
-        }
-        Rect rect = Imgproc.boundingRect(contours.get(maxId));
-        Bitmap contoursbitmap = Bitmap.createBitmap(src.cols(), src.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(src, contoursbitmap);
-        showBitmap(contoursbitmap, sixth);
-        Bitmap cropbitmap = Bitmap.createBitmap(contoursbitmap, rect.x, rect.y, rect.width, rect.height);
-        showBitmap(cropbitmap, fifth);
     }
 
     private double angle(Point p1, Point p2, Point p0) {
@@ -689,24 +592,7 @@ public class ImagePreviewActivity extends AppCompatActivity {
         return edges;
     }
 
-    private void detectImage() {
-        List<PointF> points = mSelectionImageView.getPoints();
 
-        if (mBitmap != null) {
-            Mat orig = new Mat();
-            org.opencv.android.Utils.bitmapToMat(mBitmap, orig);
-
-            Mat transformed = perspectiveTransform(orig, points);
-            mResult = applyThreshold(transformed);
-
-            PhotoView photoView = (PhotoView) mResultDialog.getCustomView().findViewById(R.id.imageView);
-            photoView.setImageBitmap(mResult);
-            mResultDialog.show();
-            showBitmap(mBitmap, originalimageView);
-            showBitmap(mResult, contoursview);
-
-        }
-    }
 
     /**
      * Apply a threshold to give the "scanned" look
