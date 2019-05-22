@@ -11,7 +11,6 @@ import android.view.SurfaceHolder;
 
 import org.opencv.android.JavaCameraView;
 
-import java.io.FileOutputStream;
 import java.util.List;
 
 @SuppressLint("ViewConstructor")

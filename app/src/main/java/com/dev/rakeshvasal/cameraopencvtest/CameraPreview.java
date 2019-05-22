@@ -8,7 +8,6 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.WindowManager;
 
-import java.io.IOException;
 import java.util.List;
 
 /**

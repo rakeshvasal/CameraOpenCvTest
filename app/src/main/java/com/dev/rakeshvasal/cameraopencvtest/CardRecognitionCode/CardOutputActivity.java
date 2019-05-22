@@ -1,8 +1,7 @@
 package com.dev.rakeshvasal.cameraopencvtest.CardRecognitionCode;
 
-import android.graphics.Bitmap;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.ImageView;
 

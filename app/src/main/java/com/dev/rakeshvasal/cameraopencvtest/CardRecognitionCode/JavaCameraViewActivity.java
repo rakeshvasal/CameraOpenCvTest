@@ -4,19 +4,17 @@ import android.annotation.TargetApi;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-
 import android.media.ExifInterface;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.dev.rakeshvasal.cameraopencvtest.CardOutputModel;
 import com.dev.rakeshvasal.cameraopencvtest.R;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -47,9 +45,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import static com.bumptech.glide.load.resource.bitmap.TransformationUtils.rotateImage;
@@ -424,7 +420,6 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
                 Log.d(TAG, "In Post with values");
                 final Bitmap resultBitmap = Bitmap.createBitmap(image_output.cols(), image_output.rows(), Bitmap.Config.ARGB_8888);
                 Utils.matToBitmap(image_output, resultBitmap);
-                Bitmap cardBitmap = resultBitmap.copy(Bitmap.Config.ARGB_8888, true);
                 final ByteArrayOutputStream stream = new ByteArrayOutputStream();
                 runOnUiThread(new Runnable() {
                     @Override

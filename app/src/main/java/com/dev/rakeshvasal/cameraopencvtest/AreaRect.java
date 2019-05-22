@@ -1,10 +1,7 @@
 package com.dev.rakeshvasal.cameraopencvtest;
 
-import android.support.annotation.NonNull;
-
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Rect;
-import org.opencv.imgproc.Imgproc;
 
 public class AreaRect {
 

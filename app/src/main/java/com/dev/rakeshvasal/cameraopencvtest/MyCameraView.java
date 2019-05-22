@@ -1,20 +1,20 @@
 package com.dev.rakeshvasal.cameraopencvtest;
 
-import org.opencv.android.CameraBridgeViewBase;
-import android.hardware.Camera;
-import java.util.List;
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
+import android.hardware.Camera;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.ViewGroup.LayoutParams;
 
+import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+
+import java.util.List;
 
 public class MyCameraView extends CameraBridgeViewBase implements Camera.PreviewCallback {
     private static final int MAGIC_TEXTURE_ID = 10;
