@@ -1,12 +1,9 @@
 package com.dev.rakeshvasal.cameraopencvtest.CardRecognitionCode;
 
-import android.annotation.TargetApi;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.media.ExifInterface;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -41,19 +38,15 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.bumptech.glide.load.resource.bitmap.TransformationUtils.rotateImage;
 
 public class JavaCameraViewActivity extends AppCompatActivity implements CameraLab.CameraCaptureCallbacks, CameraBridgeViewBase.CvCameraViewListener2 {
 
 
-    CameraLab CameraView;
+    CameraLab cameraView;
     private static int MAX_HEIGHT = 1600;
     private byte[] originalByteData;
     private static String TAG = "JavaCameraViewActivity.class";
@@ -63,14 +56,14 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_java_camera_view);
-        CameraView = (CameraLab) findViewById(R.id.surface_view);
+        cameraView = (CameraLab) findViewById(R.id.surface_view);
         Button bt = findViewById(R.id.btn);
-        CameraView.setCaptureCallback(this);
-        CameraView.setCvCameraViewListener(this);
+        cameraView.setCaptureCallback(this);
+        cameraView.setCvCameraViewListener(this);
         bt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                CameraView.takePicture();
+                cameraView.takePicture();
             }
         });
     }
@@ -88,7 +81,7 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
             switch (status) {
                 case LoaderCallbackInterface.SUCCESS: {
                     Log.i("OpenCV", "OpenCV loaded successfully");
-                    CameraView.enableView();
+                    cameraView.enableView();
                 }
                 break;
                 default: {
@@ -98,67 +91,6 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
             }
         }
     };
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        Log.d("a", " -> OnResume");
-        try {
-            super.onResume();
-            if (!OpenCVLoader.initDebug()) {
-                Log.d("OpenCV", "Internal OpenCV library not found. Using OpenCV Manager for initialization");
-                OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
-            } else {
-                Log.d("OpenCV", "OpenCV library found inside package. Using it!");
-                mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            finish();
-        }
-        Log.d("a", " <- OnResume");
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        if (CameraView != null)
-            CameraView.disableView();
-    }
-
-    public void onDestroy() {
-        super.onDestroy();
-        if (CameraView != null)
-            CameraView.disableView();
-    }
-
-    @Override
-    public void onCameraViewStarted(int width, int height) {
-
-    }
-
-    @Override
-    public void onCameraViewStopped() {
-
-    }
-
-    @Override
-    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        final Mat mRGBA = inputFrame.rgba();
-        //Log.i("Framerec", "YO");
-        getFrames(mRGBA);
-
-        return null;
-    }
-
-    private void getFrames(final Mat inputFrame) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                //recognizeBitmap(inputFrame);
-            }
-        });
-    }
 
     @Override
     public void onCapture(byte[] pictureByteData) {
@@ -184,10 +116,10 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
                 bitmap = Bitmap.createScaledBitmap(bitmap, width, height, true);
 
                 Utils.bitmapToMat(bitmap, mat);
-                //recognizeBitmap(mat);
+
 
                 new CropCard().execute(mat);
-                //CharacterRecognition(mat);
+
             } else {
                 Toast.makeText(this, "No Card Captured", Toast.LENGTH_SHORT).show();
             }
@@ -197,7 +129,7 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
     }
 
 
-
+    @SuppressLint("StaticFieldLeak")
     class CropCard extends AsyncTask<Mat, Mat, Mat> {
         Mat originalMat = new Mat();
 
@@ -328,9 +260,10 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
                 File cardFile = CommanUtils.getFileFromBitmap(resultBitmap);
 
 
-                Intent intent = new Intent(JavaCameraViewActivity.this, CardOutputActivity.class);
-                intent.putExtra("originalBitmap", originalFile.getAbsolutePath());
-                intent.putExtra("resultBitmap", cardFile.getAbsolutePath());
+                //Intent intent = new Intent(JavaCameraViewActivity.this, CardOutputActivity.class);
+                Intent intent = new Intent(JavaCameraViewActivity.this, ImagePreviewActivity.class);
+                intent.putExtra("ImgURL", originalFile.getAbsolutePath());
+                //intent.putExtra("resultBitmap", cardFile.getAbsolutePath());
                 startActivity(intent);
             } else {
                 Toast.makeText(JavaCameraViewActivity.this, "No Card Captured", Toast.LENGTH_SHORT).show();
@@ -352,6 +285,56 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
                     + 1e-10);
         }
     }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d("a", " -> OnResume");
+        try {
+            super.onResume();
+            if (!OpenCVLoader.initDebug()) {
+                Log.d("OpenCV", "Internal OpenCV library not found. Using OpenCV Manager for initialization");
+                OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
+            } else {
+                Log.d("OpenCV", "OpenCV library found inside package. Using it!");
+                mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            finish();
+        }
+        Log.d("a", " <- OnResume");
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (cameraView != null)
+            cameraView.disableView();
+    }
+
+    public void onDestroy() {
+        super.onDestroy();
+        if (cameraView != null)
+            cameraView.disableView();
+    }
+
+    @Override
+    public void onCameraViewStarted(int width, int height) {
+
+    }
+
+    @Override
+    public void onCameraViewStopped() {
+
+    }
+
+    @Override
+    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+        return null;
+    }
+
 
     private void CharacterRecognition(Mat sImage) {
         Mat grayImage = new Mat();

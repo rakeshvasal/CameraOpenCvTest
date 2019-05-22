@@ -5,10 +5,8 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -18,24 +16,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.Toast;
-
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfInt;
-import org.opencv.core.MatOfPoint;
-import org.opencv.core.MatOfPoint2f;
-import org.opencv.core.Point;
-import org.opencv.core.Scalar;
-import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -50,11 +32,8 @@ public class CameraTest extends AppCompatActivity {
     private CameraPreview mCameraPreview;
     private static final int REQUEST_ID_MULTIPLE_PERMISSIONS = 1001;
     private static final int IMAGE_PREVIEW = 1002;
-    CheckBox flashcheck;
-    Camera.Parameters params;
     public static int CAM1 = 1;
     FrameLayout preview;
-    int cameraId = -1;
     public static String TAG = "CameraActivity";
 
     @Override
@@ -62,8 +41,8 @@ public class CameraTest extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         mCamera = openFrontFacingCamera();
         setContentView(R.layout.activity_camera_test);
-        Button captureButton = (Button) findViewById(R.id.button_capture);
-        preview = (FrameLayout) findViewById(R.id.camera_preview);
+        Button captureButton = findViewById(R.id.button_capture);
+        preview = findViewById(R.id.camera_preview);
         captureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -101,7 +80,7 @@ public class CameraTest extends AppCompatActivity {
             params.setPreviewSize(optionalSize.width, optionalSize.height);
             params.setRotation(90);
             params.setPictureSize(size.width, size.height);
-           // params.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
+            // params.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
             params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
             //setCameraDisplayOrientation(CameraActivity.this,cameraId,mCamera);
             params.setWhiteBalance(Camera.Parameters.WHITE_BALANCE_AUTO);
@@ -206,26 +185,11 @@ public class CameraTest extends AppCompatActivity {
     }
 
     private void releaseCameraAndPreview() {
-
         if (mCamera != null) {
             mCamera.release();
             mCamera = null;
         }
-        //setValues();
     }
-
-    /*Camera.PreviewCallback previewCallback = new Camera.PreviewCallback() {
-        @Override
-        public void onPreviewFrame(byte[] data, Camera camera) {
-            Log.d("Frames", "" + data.length);
-            byte[] bitmapdata = data; // let this be your byte array
-            ByteArrayInputStream arrayInputStream = new ByteArrayInputStream(bitmapdata);
-            Bitmap bitmap = BitmapFactory.decodeStream(arrayInputStream);
-            Mat mat = new Mat();
-            Utils.bitmapToMat(bitmap, mat);
-            //new AsyncProcess(mat).execute();
-        }
-    };*/
 
     Camera.PictureCallback mPicture = new Camera.PictureCallback() {
         @Override
@@ -236,155 +200,22 @@ public class CameraTest extends AppCompatActivity {
             }
             try {
                 FileOutputStream fos = new FileOutputStream(pictureFile);
-
                 fos.write(data);
                 fos.close();
 
                 Intent intent = new Intent(CameraTest.this, ImageProcessingActivity.class);
-
                 String image_path = pictureFile.getPath();
-
                 intent.putExtra("ImgURL", image_path);
                 intent.putExtra("CamType", CAM1);
                 //releaseCameraAndPreview();
-
                 startActivityForResult(intent, IMAGE_PREVIEW);
-                //finish();
-
             } catch (Exception e) {
-
                 e.printStackTrace();
-
                 releaseCameraAndPreview();
                 finish();
-
             }
-
-
         }
     };
-
-    public class AsyncProcess extends AsyncTask<String, String, String> {
-
-        Mat finalMat = new Mat();
-        Mat originalMat = new Mat();
-
-        public AsyncProcess(Mat original) {
-            this.originalMat = original;
-        }
-
-        @Override
-        protected String doInBackground(String... strings) {
-            try {
-                findRectangle(originalMat);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
-
-        private void findRectangle(Mat src) throws Exception {
-            Mat image_output = new Mat();
-            Mat grayCon = new Mat();
-
-            Imgproc.cvtColor(originalMat, grayCon, Imgproc.COLOR_BGR2GRAY);
-
-            Mat blurred = src.clone();
-            Imgproc.medianBlur(src, blurred, 9);
-
-            Mat gray0 = new Mat(blurred.size(), CvType.CV_8U),
-                    gray = new Mat();
-
-            List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-
-            List<Mat> blurredChannel = new ArrayList<Mat>();
-            blurredChannel.add(blurred);
-            List<Mat> gray0Channel = new ArrayList<Mat>();
-            gray0Channel.add(gray0);
-
-            MatOfPoint2f approxCurve;
-
-            double maxArea = 0;
-            int maxId = -1;
-
-            for (int c = 0; c < 3; c++) {
-                int ch[] = {c, 0};
-                Core.mixChannels(blurredChannel, gray0Channel, new MatOfInt(ch));
-
-                int thresholdLevel = 1;
-                for (int t = 0; t < thresholdLevel; t++) {
-                    if (t == 0) {
-                        Imgproc.Canny(gray0, gray, 20, 40, 3, true); // true ?
-                        Imgproc.dilate(gray, gray, new Mat(), new Point(-1, -1), 1); // 1
-                        // ?
-                    } else {
-                        Imgproc.adaptiveThreshold(gray0, gray, thresholdLevel,
-                                Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                Imgproc.THRESH_BINARY,
-                                (originalMat.width() + originalMat.height()) / 200, t);
-                    }
-
-                    Imgproc.findContours(gray, contours, new Mat(),
-                            Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-
-                    for (MatOfPoint contour : contours) {
-                        MatOfPoint2f temp = new MatOfPoint2f(contour.toArray());
-
-                        double area = Imgproc.contourArea(contour);
-                        approxCurve = new MatOfPoint2f();
-                        Imgproc.approxPolyDP(temp, approxCurve,
-                                Imgproc.arcLength(temp, true) * 0.02, true);
-
-                        if (approxCurve.total() == 4 && area >= maxArea) {
-                            double maxCosine = 0;
-
-                            List<Point> curves = approxCurve.toList();
-                            for (int j = 2; j < 5; j++) {
-
-                                double cosine = Math.abs(angle(curves.get(j % 4),
-                                        curves.get(j - 2), curves.get(j - 1)));
-                                maxCosine = Math.max(maxCosine, cosine);
-                            }
-
-                            if (maxCosine < 0.3) {
-                                maxArea = area;
-                                maxId = contours.indexOf(contour);
-                            }
-                        }
-                    }
-                }
-            }
-
-
-            if (maxId >= 0) {
-                Imgproc.drawContours(src, contours, maxId, new Scalar(255, 0, 0,
-                        .8), 8);
-            }
-        }
-
-
-        @Override
-        protected void onPostExecute(String s) {
-            showBitmap(finalMat, null);
-            super.onPostExecute(s);
-        }
-    }
-
-    private double angle(Point p1, Point p2, Point p0) {
-        double dx1 = p1.x - p0.x;
-        double dy1 = p1.y - p0.y;
-        double dx2 = p2.x - p0.x;
-        double dy2 = p2.y - p0.y;
-        return (dx1 * dx2 + dy1 * dy2)
-                / Math.sqrt((dx1 * dx1 + dy1 * dy1) * (dx2 * dx2 + dy2 * dy2)
-                + 1e-10);
-    }
-
-    private void showBitmap(Mat mat, ImageView imageView) {
-        Bitmap bitmap = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(mat, bitmap);
-        //imageView.setImageBitmap(bitmap);
-    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -416,7 +247,6 @@ public class CameraTest extends AppCompatActivity {
         return mediaFile;
     }
 
-
     public Camera openFrontFacingCamera() {
         int cameraCount = 0;
         Camera cam = null;
@@ -437,26 +267,17 @@ public class CameraTest extends AppCompatActivity {
         return null;
     }
 
-
     @Override
     protected void onResume() {
         super.onResume();
         Log.d(TAG, " -> OnResume");
         try {
             super.onResume();
-            if (!OpenCVLoader.initDebug()) {
-                Log.d("OpenCV", "Internal OpenCV library not found. Using OpenCV Manager for initialization");
-                OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
-            } else {
-                Log.d("OpenCV", "OpenCV library found inside package. Using it!");
-                mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-            }
             mCamera = openFrontFacingCamera();
             setParameters();
             if (mCamera != null) {
                 mCameraPreview = new CameraPreview(this, mCamera);
                 preview.addView(mCameraPreview);
-                //setContentView(mCameraPreview);
             } else {
                 Log.d(TAG, " = Camera == NULL");
             }
@@ -477,23 +298,5 @@ public class CameraTest extends AppCompatActivity {
         super.onPause();
         Log.d(TAG, " <- onPause");
     }
-
-    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
-        @Override
-        public void onManagerConnected(int status) {
-            switch (status) {
-                case LoaderCallbackInterface.SUCCESS: {
-                    Log.i("OpenCV", "OpenCV loaded successfully");
-                    //compare();
-                }
-                break;
-                default: {
-                    super.onManagerConnected(status);
-                }
-                break;
-            }
-        }
-    };
-
 
 }
