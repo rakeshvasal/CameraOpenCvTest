@@ -11,6 +11,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.dev.rakeshvasal.cameraopencvtest.ImageProcessingActivity;
 import com.dev.rakeshvasal.cameraopencvtest.R;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -252,7 +253,7 @@ public class JavaCameraViewActivity extends AppCompatActivity implements CameraL
                 File cardFile = CommanUtils.getFileFromBitmap(resultBitmap);
 
 
-                Intent intent = new Intent(JavaCameraViewActivity.this, CardOutputActivity.class);
+                Intent intent = new Intent(JavaCameraViewActivity.this, ImageProcessingActivity.class);
                 intent.putExtra("ImgURL", originalFile.getAbsolutePath());
                 //intent.putExtra("resultBitmap", cardFile.getAbsolutePath());
                 startActivity(intent);
