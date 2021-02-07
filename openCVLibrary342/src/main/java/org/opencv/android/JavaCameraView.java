@@ -1,5 +1,6 @@
 package org.opencv.android;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
 import android.content.Context;
@@ -10,7 +11,10 @@ import android.hardware.Camera.PreviewCallback;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Display;
+import android.view.Surface;
 import android.view.ViewGroup.LayoutParams;
+import android.view.WindowManager;
 
 import org.opencv.BuildConfig;
 import org.opencv.core.CvType;
@@ -143,9 +147,6 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                 List<android.hardware.Camera.Size> sizes = params.getSupportedPreviewSizes();
 
                 if (sizes != null) {
-                    /* Select the size that fits surface considering maximum size allowed */
-                    Size frameSize = calculateCameraFrameSize(sizes, new JavaCameraSizeAccessor(), width, height);
-
                     /* Image format NV21 causes issues in the Android emulators */
                     if (Build.FINGERPRINT.startsWith("generic")
                             || Build.FINGERPRINT.startsWith("unknown")
@@ -160,29 +161,12 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                         params.setPreviewFormat(ImageFormat.NV21);
 
                     mPreviewFormat = params.getPreviewFormat();
-
-                    Log.d(TAG, "Set preview size to " + Integer.valueOf((int)frameSize.width) + "x" + Integer.valueOf((int)frameSize.height));
-                    params.setPreviewSize((int)frameSize.width, (int)frameSize.height);
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH && !android.os.Build.MODEL.equals("GT-I9100"))
-                        params.setRecordingHint(true);
-
-                    List<String> FocusModes = params.getSupportedFocusModes();
-                    if (FocusModes != null && FocusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO))
-                    {
-                        params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
-                    }
-
+                    if (!Build.MODEL.equals("GT-I9100")) params.setRecordingHint(true);
+                    params.setPreviewSize(1920, 1080);
                     mCamera.setParameters(params);
-                    params = mCamera.getParameters();
 
-                    mFrameWidth = params.getPreviewSize().width;
-                    mFrameHeight = params.getPreviewSize().height;
-
-                    if ((getLayoutParams().width == LayoutParams.MATCH_PARENT) && (getLayoutParams().height == LayoutParams.MATCH_PARENT))
-                        mScale = Math.min(((float)height)/mFrameHeight, ((float)width)/mFrameWidth);
-                    else
-                        mScale = 0;
+                    mFrameWidth = 1920;
+                    mFrameHeight = 1080;
 
                     if (mFpsMeter != null) {
                         mFpsMeter.setResolution(mFrameWidth, mFrameHeight);
@@ -205,14 +189,16 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                     mCameraFrame[0] = new JavaCameraFrame(mFrameChain[0], mFrameWidth, mFrameHeight);
                     mCameraFrame[1] = new JavaCameraFrame(mFrameChain[1], mFrameWidth, mFrameHeight);
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-                        mSurfaceTexture = new SurfaceTexture(MAGIC_TEXTURE_ID);
-                        mCamera.setPreviewTexture(mSurfaceTexture);
-                    } else
-                       mCamera.setPreviewDisplay(null);
+                    mSurfaceTexture = new SurfaceTexture(MAGIC_TEXTURE_ID);
+                    mCamera.setPreviewTexture(mSurfaceTexture);
 
-                    /* Finally we are ready to start the preview */
-                    Log.d(TAG, "startPreview");
+                    if (getOrientation().equals("portrait")) {
+                        setDisplayOrientation(mCamera, 90);
+                    } else if (getOrientation().equals("reverse landscape")){
+                        setDisplayOrientation(mCamera, 180);
+                    }
+                    mCamera.setPreviewDisplay(getHolder());
+
                     mCamera.startPreview();
                 }
                 else
@@ -224,6 +210,33 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
         }
 
         return result;
+    }
+
+    private void setDisplayOrientation(Camera camera, int angle){
+        Method downPolymorphic;
+        try {
+            downPolymorphic = camera.getClass().getMethod("setDisplayOrientation", int.class);
+            if (downPolymorphic != null) {
+                downPolymorphic.invoke(camera, angle);
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String getOrientation(){
+        int orientation = Surface.ROTATION_0;
+
+        WindowManager wm = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
+        if (wm != null) {
+            Display display = wm.getDefaultDisplay();
+            orientation = display.getOrientation();
+        }
+
+        if (orientation == Surface.ROTATION_0) return "portrait";
+        if (orientation == Surface.ROTATION_90) return "landscape";
+        else return "reverse landscape";
     }
 
     protected void releaseCamera() {
@@ -300,7 +313,7 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
     @Override
     public void onPreviewFrame(byte[] frame, Camera arg1) {
         if (BuildConfig.DEBUG)
-            Log.d(TAG, "Preview Frame received. Frame size: " + frame.length);
+            //Log.d(TAG, "Preview Frame received. Frame size: " + frame.length);
         synchronized (this) {
             mFrameChain[mChainIdx].put(0, 0, frame);
             mCameraFrameReady = true;

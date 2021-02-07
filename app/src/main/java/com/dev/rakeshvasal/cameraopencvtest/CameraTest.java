@@ -8,21 +8,16 @@ import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.Toast;
-
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -37,11 +32,8 @@ public class CameraTest extends AppCompatActivity {
     private CameraPreview mCameraPreview;
     private static final int REQUEST_ID_MULTIPLE_PERMISSIONS = 1001;
     private static final int IMAGE_PREVIEW = 1002;
-    CheckBox flashcheck;
-    Camera.Parameters params;
     public static int CAM1 = 1;
     FrameLayout preview;
-    int cameraId = -1;
     public static String TAG = "CameraActivity";
 
     @Override
@@ -49,17 +41,25 @@ public class CameraTest extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         mCamera = openFrontFacingCamera();
         setContentView(R.layout.activity_camera_test);
-        Button captureButton = (Button) findViewById(R.id.button_capture);
-        preview = (FrameLayout) findViewById(R.id.camera_preview);
-
+        Button captureButton = findViewById(R.id.button_capture);
+        preview = findViewById(R.id.camera_preview);
         captureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // mCamera.takePicture(null, null, mPicture);
+                mCamera.autoFocus(new Camera.AutoFocusCallback() {
 
-                mCamera.takePicture(null, null, mPicture);
+                    @Override
+                    public void onAutoFocus(boolean success, Camera camera) {
+                        if (success) {
+                            mCamera.takePicture(null, null, mPicture);
+                        }
+                    }
+                });
+
             }
         });
-
+        setParameters();
         Button flash_switch = findViewById(R.id.flash_switch);
         flash_switch.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -80,11 +80,13 @@ public class CameraTest extends AppCompatActivity {
             params.setPreviewSize(optionalSize.width, optionalSize.height);
             params.setRotation(90);
             params.setPictureSize(size.width, size.height);
-            params.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
+            // params.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
+            params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
             //setCameraDisplayOrientation(CameraActivity.this,cameraId,mCamera);
             params.setWhiteBalance(Camera.Parameters.WHITE_BALANCE_AUTO);
             params.setExposureCompensation(0);
             params.setPictureFormat(ImageFormat.JPEG);
+            //mCamera.setPreviewCallback(previewCallback);
             params.setJpegQuality(100);
             mCamera.setParameters(params);
         }
@@ -141,7 +143,6 @@ public class CameraTest extends AppCompatActivity {
         if (!listPermissionsNeeded.isEmpty()) {
             ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray
                     (new String[listPermissionsNeeded.size()]), REQUEST_ID_MULTIPLE_PERMISSIONS);
-
         }
     }
 
@@ -159,7 +160,6 @@ public class CameraTest extends AppCompatActivity {
             return false;
         }
     }
-
 
     /**
      * Helper method to access the camera returns null if it cannot get the
@@ -185,12 +185,10 @@ public class CameraTest extends AppCompatActivity {
     }
 
     private void releaseCameraAndPreview() {
-
         if (mCamera != null) {
             mCamera.release();
             mCamera = null;
         }
-        //setValues();
     }
 
     Camera.PictureCallback mPicture = new Camera.PictureCallback() {
@@ -202,31 +200,20 @@ public class CameraTest extends AppCompatActivity {
             }
             try {
                 FileOutputStream fos = new FileOutputStream(pictureFile);
-
                 fos.write(data);
                 fos.close();
 
-                Intent intent = new Intent(CameraTest.this, ImagePreviewActivity.class);
-
+                Intent intent = new Intent(CameraTest.this, ImageProcessingActivity.class);
                 String image_path = pictureFile.getPath();
-
                 intent.putExtra("ImgURL", image_path);
                 intent.putExtra("CamType", CAM1);
                 //releaseCameraAndPreview();
-
                 startActivityForResult(intent, IMAGE_PREVIEW);
-                //finish();
-
             } catch (Exception e) {
-
                 e.printStackTrace();
-
                 releaseCameraAndPreview();
                 finish();
-
             }
-
-
         }
     };
 
@@ -260,7 +247,6 @@ public class CameraTest extends AppCompatActivity {
         return mediaFile;
     }
 
-
     public Camera openFrontFacingCamera() {
         int cameraCount = 0;
         Camera cam = null;
@@ -281,25 +267,17 @@ public class CameraTest extends AppCompatActivity {
         return null;
     }
 
-
     @Override
     protected void onResume() {
         super.onResume();
         Log.d(TAG, " -> OnResume");
         try {
             super.onResume();
-            if (!OpenCVLoader.initDebug()) {
-                Log.d("OpenCV", "Internal OpenCV library not found. Using OpenCV Manager for initialization");
-                OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
-            } else {
-                Log.d("OpenCV", "OpenCV library found inside package. Using it!");
-                mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-            }
             mCamera = openFrontFacingCamera();
+            setParameters();
             if (mCamera != null) {
                 mCameraPreview = new CameraPreview(this, mCamera);
                 preview.addView(mCameraPreview);
-                //setContentView(mCameraPreview);
             } else {
                 Log.d(TAG, " = Camera == NULL");
             }
@@ -320,21 +298,5 @@ public class CameraTest extends AppCompatActivity {
         super.onPause();
         Log.d(TAG, " <- onPause");
     }
-    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
-        @Override
-        public void onManagerConnected(int status) {
-            switch (status) {
-                case LoaderCallbackInterface.SUCCESS: {
-                    Log.i("OpenCV", "OpenCV loaded successfully");
-                    //compare();
-                }
-                break;
-                default: {
-                    super.onManagerConnected(status);
-                }
-                break;
-            }
-        }
-    };
 
 }
